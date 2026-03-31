@@ -41,15 +41,11 @@ async function fetchHeapData() {
 }
 
 // --- CÁC HÀNH ĐỘNG API ---
-
 async function insertStudent() {
     const btn = document.getElementById('btnInsert');
-
-    // Tiền xử lý dữ liệu nhập
     let rawMssv = document.getElementById('inMssv').value.trim();
     if(!rawMssv) return alert("❌ Vui lòng nhập MSSV!");
 
-    // TỰ ĐỘNG THÊM SỐ 0 VÀO TRƯỚC NẾU NHẬP THIẾU 8 SỐ
     let paddedMssv = rawMssv.padStart(8, '0');
 
     const data = {
@@ -57,7 +53,6 @@ async function insertStudent() {
         name: document.getElementById('inName').value.trim(),
         gender: document.getElementById('inGender').value,
         major: document.getElementById('inMajor').value.trim()
-        // Đã xóa trường birthday
     }
 
     if(!data.name) return alert("❌ Vui lòng nhập họ và tên!");
@@ -76,7 +71,7 @@ async function insertStudent() {
             renderHeapTable(result.full_heap);
             document.getElementById('inMssv').value = '';
             document.getElementById('inName').value = '';
-            document.getElementById('inMajor').value = ''; // Clear thêm ô chuyên ngành
+            document.getElementById('inMajor').value = '';
 
             currentSteps = result.steps;
             currentStepIdx = 0;
@@ -122,7 +117,6 @@ async function searchStudent() {
     let rawMssv = document.getElementById('inSearchDelete').value.trim();
     if(!rawMssv) return;
 
-    // Tự động bù số 0 để tìm đúng
     let mssv = rawMssv.padStart(8, '0');
 
     const res = await fetch('/api/search', {
@@ -211,7 +205,6 @@ function calculateSubtreeWidth(node) {
 
 function isIdInTree(node, id) {
     if (!node) return false;
-    // Chú ý: Vì mssv bây giờ lưu là chuỗi (String), ta so sánh trực tiếp không cần Number()
     if (node.keys.includes(id)) return true;
     if (node.children) {
         for (let c of node.children) {
@@ -284,7 +277,6 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
     let nodeEl = document.getElementById(nodeId);
 
     const xCenter = (xLeft + xRight) / 2;
-    // So sánh chuỗi trực tiếp
     const hasHighlight = highlightId && node.keys.includes(highlightId);
     const isWarning = (warningId === node.id);
 
@@ -350,12 +342,21 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
         let currentX = xCenter - (node.subtreeWidth / 2);
         const GAP = 50;
 
-        node.children.forEach((child) => {
+        // --- VÁ LỖI TOÁN HỌC: CHIA ĐIỂM XUẤT PHÁT CỦA CÁC ĐƯỜNG NỐI ---
+        const keyWidth = 96; // Chiều rộng ước tính chuẩn xác của 1 ô chứa MSSV
+        const totalKeys = node.keys.length;
+        // Tính điểm tận cùng bên trái của Node cha
+        const parentLeftX = xCenter - ((totalKeys * keyWidth) / 2);
+
+        node.children.forEach((child, i) => {
             const childWidth = child.subtreeWidth;
             const childXLeft = currentX;
             const childXRight = currentX + childWidth;
             const childXCenter = (childXLeft + childXRight) / 2;
             const childY = y + 120;
+
+            // Tính điểm xuất phát của nét vẽ dựa vào vị trí của nhánh con (0, 1, 2...)
+            const startX = parentLeftX + (i * keyWidth);
 
             const lineId = `line-${nodeId}-to-${child.id}`;
             let line = document.getElementById(lineId);
@@ -363,16 +364,16 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
             if (!line) {
                 line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.id = lineId;
-                line.setAttribute("x1", xCenter);
+                // Bắt đầu vẽ từ ranh giới giữa các key thay vì xCenter
+                line.setAttribute("x1", startX);
                 line.setAttribute("y1", y + 42);
-                line.setAttribute("x2", xCenter);
+                line.setAttribute("x2", startX);
                 line.setAttribute("y2", y + 42);
                 svg.appendChild(line);
             }
 
             line.dataset.keep = "true";
 
-            // Truyền string vào isIdInTree
             const isActivePath = highlightId && isIdInTree(child, highlightId);
             if (isActivePath) {
                 line.setAttribute('class', isLastStep ? 'success-line' : 'active-line');
@@ -383,7 +384,7 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
             }
 
             requestAnimationFrame(() => {
-                line.setAttribute("x1", xCenter);
+                line.setAttribute("x1", startX);
                 line.setAttribute("y1", y + 42);
                 line.setAttribute("x2", childXCenter);
                 line.setAttribute("y2", childY);
@@ -395,7 +396,6 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
     }
 }
 
-// --- ANIMATION CONTROLS ---
 // CÁC HẰNG SỐ CHỨA MÃ SVG CHO NÚT PLAY/PAUSE
 const iconPause = `<svg class="icon-inline" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Tạm dừng`;
 const iconPlay = `<svg class="icon-inline" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Tiếp tục`;
