@@ -1,0 +1,13 @@
+# Môi trường ảo
+venv/
+env/
+.env
+
+# Rác của Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Hệ điều hành
+.DS_Store
+Thumbs.db
