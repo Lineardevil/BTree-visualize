@@ -52,7 +52,8 @@ class BTreeIndex:
 
     def get_all_entries(self):
         entries = []
-        self._in_order_traversal(self.root, entries)
+        if self.root:
+            self._in_order_traversal(self.root, entries)
         return entries
 
     def _in_order_traversal(self, node, entries):
@@ -296,6 +297,20 @@ sync_db_to_tree()
 def index():
     return render_template("index.html")
 
+# --- MỚI: API GỘP DUY NHẤT ĐỂ CHỐNG LỖI 500 TRÊN VERCEL ---
+@app.route("/api/init_data", methods=["GET"])
+def api_init_data():
+    return jsonify({
+        "heap": list(student_heap_data.values()),
+        "index": btree_index.get_all_entries(),
+        "tree": {
+            "msg": "Cây B-Tree hiện hành (Đã đồng bộ từ Database)",
+            "tree": btree_index.root.to_dict(),
+            "highlight": None,
+            "warning_id": None
+        }
+    })
+
 @app.route("/api/add_student", methods=["POST"])
 def api_add():
     data = request.json
@@ -364,16 +379,6 @@ def api_get_heap():
 @app.route("/api/get_index", methods=["GET"])
 def api_get_index():
     return jsonify(btree_index.get_all_entries())
-
-# --- API MỚI: LẤY CÂY HIỆN TẠI KHI VỪA LOAD TRANG ---
-@app.route("/api/get_tree", methods=["GET"])
-def api_get_tree():
-    return jsonify({
-        "msg": "Cây B-Tree hiện hành (Đã đồng bộ từ Database)",
-        "tree": btree_index.root.to_dict(),
-        "highlight": None,
-        "warning_id": None
-    })
 
 @app.route("/api/search", methods=["POST"])
 def api_search():

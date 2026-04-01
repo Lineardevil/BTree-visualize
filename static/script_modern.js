@@ -42,6 +42,17 @@ function renderHeapTable(students) {
     totalCount.innerText = students.length;
 }
 
+function renderIndexTable(entries) {
+    const tbody = document.querySelector('#indexTable tbody');
+    tbody.innerHTML = '';
+    entries.forEach(e => {
+        tbody.innerHTML += `<tr>
+            <td><span class="badge" style="background:var(--primary)">${e.mssv}</span></td>
+            <td style="font-family:monospace; color:#666;">${e.pointer}</td>
+        </tr>`;
+    });
+}
+
 function showToast(message, type = 'error') {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -78,15 +89,7 @@ async function fetchHeapData() {
 async function fetchIndexData() {
     const res = await fetch('/api/get_index');
     const entries = await res.json();
-    const tbody = document.querySelector('#indexTable tbody');
-    tbody.innerHTML = '';
-
-    entries.forEach(e => {
-        tbody.innerHTML += `<tr>
-            <td><span class="badge" style="background:var(--primary)">${e.mssv}</span></td>
-            <td style="font-family:monospace; color:#666;">${e.pointer}</td>
-        </tr>`;
-    });
+    renderIndexTable(entries);
 }
 
 async function insertStudent() {
@@ -581,28 +584,25 @@ function autoFitTree() {
     updateTreeUI();
 }
 
-// --- MỚI: HÀM LẤY DATA TĨNH BAN ĐẦU CỦA CÂY ---
-async function fetchCurrentTree() {
+// --- MỚI: TỐI ƯU HÓA LOAD TRANG CHO VERCEL (GỘP 3 YÊU CẦU LÀM 1) ---
+window.onload = async function() {
     try {
-        const res = await fetch('/api/get_tree');
-        const treeData = await res.json();
+        const res = await fetch('/api/init_data');
+        const data = await res.json();
 
-        // Đặt trạng thái tĩnh làm step duy nhất
-        currentSteps = [treeData];
+        // 1. Cập nhật Bảng Gốc
+        renderHeapTable(data.heap);
+
+        // 2. Cập nhật Bảng Index
+        renderIndexTable(data.index);
+
+        // 3. Nạp và vẽ Cây B-Tree
+        currentSteps = [data.tree];
         currentStepIdx = 0;
-
-        // Chờ dữ liệu xong thì mở Tab Tree và vẽ
         switchTab('tab-tree');
     } catch (e) {
-        console.error("Lỗi tải cây B-Tree ban đầu:", e);
+        console.error("Lỗi khởi tạo hệ thống từ Server:", e);
     }
-}
-
-// --- CẬP NHẬT LOAD TRANG ---
-window.onload = async function() {
-    fetchHeapData();
-    fetchIndexData();
-    await fetchCurrentTree(); // Gọi hàm tải cây khi vừa vào web
 };
 
 window.onresize = function() {
