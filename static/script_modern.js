@@ -12,7 +12,6 @@ function switchTab(tabId) {
     document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
 
-    // Cập nhật tab active (1 = Data, 2 = Index, 3 = Tree)
     if (tabId === 'tab-data') {
         document.querySelector('.nav-tab:nth-child(1)').classList.add('active');
         fetchHeapData();
@@ -55,7 +54,6 @@ function showToast(message, type = 'error') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
 
-    // Icon tự thiết kế dạng inline SVG (Khối cơ bản)
     const iconError = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>`;
     const iconSuccess = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>`;
 
@@ -122,7 +120,6 @@ async function insertStudent() {
             showToast(`Thêm thành công sinh viên ${paddedMssv}`, "success");
             renderHeapTable(result.full_heap);
 
-            // Cập nhật bảng Index ngầm nếu tab đang mở
             if(document.getElementById('tab-index').classList.contains('active')) fetchIndexData();
 
             document.getElementById('inMssv').value = '';
@@ -180,7 +177,6 @@ async function addRandom(count) {
 }
 
 function highlightTableRow(mssv, type) {
-    // Kéo vào cả 2 bảng (Heap hoặc Index) nếu có tab đó đang mở
     const tableId = document.getElementById('tab-index').classList.contains('active') ? '#indexTable' : '#heapTable';
     const rows = document.querySelectorAll(`${tableId} tbody tr`);
     for (let row of rows) {
@@ -324,7 +320,6 @@ function updateTreeUI() {
     const step = currentSteps[currentStepIdx];
     if (!step) return;
 
-    // Icon thông báo tự vẽ bằng khối SVG cơ bản
     let stepIcon = `<svg class="icon-step" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>`;
 
     document.getElementById('statusMsg').innerHTML = `<span>Step ${currentStepIdx + 1}: ${stepIcon} ${step.msg}</span>`;
@@ -586,9 +581,28 @@ function autoFitTree() {
     updateTreeUI();
 }
 
-window.onload = function() {
+// --- MỚI: HÀM LẤY DATA TĨNH BAN ĐẦU CỦA CÂY ---
+async function fetchCurrentTree() {
+    try {
+        const res = await fetch('/api/get_tree');
+        const treeData = await res.json();
+
+        // Đặt trạng thái tĩnh làm step duy nhất
+        currentSteps = [treeData];
+        currentStepIdx = 0;
+
+        // Chờ dữ liệu xong thì mở Tab Tree và vẽ
+        switchTab('tab-tree');
+    } catch (e) {
+        console.error("Lỗi tải cây B-Tree ban đầu:", e);
+    }
+}
+
+// --- CẬP NHẬT LOAD TRANG ---
+window.onload = async function() {
     fetchHeapData();
-    switchTab('tab-tree');
+    fetchIndexData();
+    await fetchCurrentTree(); // Gọi hàm tải cây khi vừa vào web
 };
 
 window.onresize = function() {

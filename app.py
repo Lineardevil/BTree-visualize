@@ -50,7 +50,6 @@ class BTreeIndex:
             "warning_id": warning_node_id
         })
 
-    # --- BỔ SUNG: LẤY DANH SÁCH INDEX TABLE ---
     def get_all_entries(self):
         entries = []
         self._in_order_traversal(self.root, entries)
@@ -66,7 +65,6 @@ class BTreeIndex:
             })
         if not node.is_leaf:
             self._in_order_traversal(node.children[-1], entries)
-    # ------------------------------------------
 
     def insert(self, mssv, uuid_ptr):
         self.steps = []
@@ -273,7 +271,6 @@ class BTreeIndex:
 # ==========================================
 btree_index = BTreeIndex()
 
-
 def sync_db_to_tree():
     global btree_index, student_heap_data
     btree_index = BTreeIndex()
@@ -290,9 +287,7 @@ def sync_db_to_tree():
     except Exception as e:
         print("❌ Lỗi cấu hình Supabase hoặc rớt mạng:", e)
 
-
 sync_db_to_tree()
-
 
 # ==========================================
 # CÁC API ROUTE
@@ -300,7 +295,6 @@ sync_db_to_tree()
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/api/add_student", methods=["POST"])
 def api_add():
@@ -328,7 +322,6 @@ def api_add():
     steps = btree_index.insert(mssv, student_id)
 
     return jsonify({"status": "ok", "steps": steps, "full_heap": list(student_heap_data.values())})
-
 
 @app.route("/api/add_random", methods=["POST"])
 def api_add_random():
@@ -364,17 +357,23 @@ def api_add_random():
 
     return jsonify({"status": "ok", "full_heap": list(student_heap_data.values()), "steps": all_steps})
 
-
 @app.route("/api/get_heap", methods=["GET"])
 def api_get_heap():
     return jsonify(list(student_heap_data.values()))
 
-
-# --- API MỚI: LẤY DỮ LIỆU INDEX TABLE ---
 @app.route("/api/get_index", methods=["GET"])
 def api_get_index():
     return jsonify(btree_index.get_all_entries())
 
+# --- API MỚI: LẤY CÂY HIỆN TẠI KHI VỪA LOAD TRANG ---
+@app.route("/api/get_tree", methods=["GET"])
+def api_get_tree():
+    return jsonify({
+        "msg": "Cây B-Tree hiện hành (Đã đồng bộ từ Database)",
+        "tree": btree_index.root.to_dict(),
+        "highlight": None,
+        "warning_id": None
+    })
 
 @app.route("/api/search", methods=["POST"])
 def api_search():
@@ -386,7 +385,6 @@ def api_search():
         student_data = student_heap_data.get(uuid_ptr)
 
     return jsonify({"student": student_data, "steps": steps})
-
 
 @app.route("/api/delete", methods=["POST"])
 def api_delete():
@@ -406,7 +404,6 @@ def api_delete():
 
     return jsonify({"status": "ok", "steps": steps, "full_heap": list(student_heap_data.values())})
 
-
 @app.route("/reset", methods=["POST"])
 def reset():
     global btree_index, student_heap_data
@@ -418,7 +415,6 @@ def reset():
     btree_index = BTreeIndex()
     student_heap_data = {}
     return jsonify({"msg": "SYSTEM REFRESHED"})
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
