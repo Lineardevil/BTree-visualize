@@ -155,6 +155,22 @@ async function addRandom(count) {
     }
 }
 
+// HÀM HỖ TRỢ: Tìm dòng trong bảng, cuộn chuột tới và bôi màu
+function highlightTableRow(mssv, type) {
+    const rows = document.querySelectorAll('#heapTable tbody tr');
+    for (let row of rows) {
+        // Cột đầu tiên [0] chứa MSSV
+        if (row.cells[0].innerText.trim() === mssv) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Gỡ class cũ nếu có, rồi gắn class mới để kích hoạt hiệu ứng chớp màu
+            row.classList.remove('highlight-success', 'highlight-danger');
+            void row.offsetWidth; // Mẹo ép trình duyệt chạy lại animation
+            row.classList.add(`highlight-${type}`);
+            break;
+        }
+    }
+}
+
 async function searchStudent() {
     let rawMssv = document.getElementById('inSearchDelete').value.trim();
     if(!rawMssv) return showToast("Nhập MSSV cần tìm!", "error");
@@ -168,19 +184,26 @@ async function searchStudent() {
     });
     const result = await res.json();
 
-    const box = document.getElementById('quickSearchResult');
-    if(result.student) {
-        const s = result.student;
-        box.innerHTML = `✅ <b>FOUND: ${s.name}</b><br><small>${s.gender} | ${s.major || 'Không có ngành'}</small>`;
-    } else {
-        box.innerHTML = `❌ Không tìm thấy mã ${mssv}`;
+    if(!result.student) {
+        return showToast(`Thất bại: Không tìm thấy mã ${mssv}`, "error");
     }
 
-    if(result.steps && result.steps.length > 0) {
-        currentSteps = result.steps;
-        currentStepIdx = 0;
-        switchTab('tab-tree');
-        startAnimation();
+    // Nếu tìm thấy: Bắn thông báo xanh lên trên cùng
+    showToast(`Tìm thấy: Sinh viên ${result.student.name}`, "success");
+
+    // KIỂM TRA NGỮ CẢNH: Người dùng đang ở Tab nào?
+    const isTableActive = document.getElementById('tab-data').classList.contains('active');
+
+    if (isTableActive) {
+        // Nếu ở Record Table -> Nhảy tới dòng đó và bôi màu viền Xanh
+        highlightTableRow(mssv, 'success');
+    } else {
+        // Nếu ở B-Tree -> Khởi chạy Animation vẽ cây như cũ
+        if(result.steps && result.steps.length > 0) {
+            currentSteps = result.steps;
+            currentStepIdx = 0;
+            startAnimation();
+        }
     }
 }
 
@@ -190,7 +213,13 @@ async function deleteStudent() {
 
     let mssv = rawMssv.padStart(8, '0');
 
-    if(!confirm(`⚠️ Xác nhận xóa sinh viên ${mssv}?`)) return;
+    if(!confirm(`⚠ Xác nhận xóa sinh viên ${mssv}?`)) return;
+
+    // Nếu đang ở Table, bôi đỏ cảnh báo dòng sắp xóa trước khi gọi API
+    const isTableActive = document.getElementById('tab-data').classList.contains('active');
+    if (isTableActive) {
+        highlightTableRow(mssv, 'danger');
+    }
 
     const res = await fetch('/api/delete', {
         method: 'POST',
@@ -200,23 +229,28 @@ async function deleteStudent() {
     const result = await res.json();
 
     if(result.status === 'ok') {
-        showToast(`Đã xóa sinh viên ${mssv}`, "success");
-        renderHeapTable(result.full_heap);
-
+        showToast(`Đã xóa thành công sinh viên ${mssv}`, "success");
         document.getElementById('inSearchDelete').value = '';
-        document.getElementById('quickSearchResult').innerHTML = '';
 
-        currentSteps = result.steps;
-        currentStepIdx = 0;
-        switchTab('tab-tree');
-        startAnimation();
+        if (isTableActive) {
+            // Đợi 0.6s cho hiệu ứng bôi đỏ chạy xong rồi mới xóa dòng khỏi bảng
+            setTimeout(() => {
+                renderHeapTable(result.full_heap);
+            }, 600);
+        } else {
+            // Nếu ở B-Tree -> Chạy animation gỡ node khỏi cây
+            renderHeapTable(result.full_heap); // Cập nhật ngầm
+            currentSteps = result.steps;
+            currentStepIdx = 0;
+            startAnimation();
+        }
     } else {
-        showToast(result.msg, "error");
+        showToast(`Không tìm thấy để xóa!`, "error");
     }
 }
 
 async function resetSystem() {
-    if(!confirm("🔄 CẢNH BÁO: Reset toàn bộ dữ liệu hệ thống?")) return;
+    if(!confirm("WARNING: Reset toàn bộ dữ liệu hệ thống?")) return;
     await fetch('/reset', { method: 'POST' });
     location.reload();
 }

@@ -162,24 +162,47 @@ class BTreeIndex:
 
             if is_last_child and idx > len(node.keys):
                 self._delete_recursive(node.children[idx - 1], key)
+                # FIX LỖI BÓNG MA: Dọn dẹp rác rỗng sau khi đệ quy về
+                if len(node.children[idx - 1].keys) < (ORDER // 2):
+                    self._fill(node, idx - 1)
             else:
                 self._delete_recursive(node.children[idx], key)
+                # FIX LỖI BÓNG MA: Dọn dẹp rác rỗng sau khi đệ quy về
+                if len(node.children[idx].keys) < (ORDER // 2):
+                    self._fill(node, idx)
 
     def _delete_from_non_leaf(self, node, idx):
         key = node.keys[idx]
-        if len(node.children[idx].keys) >= (ORDER // 2):
+        # VÁ LỖI LOGIC: Đổi dấu >= thành > để tránh mượn nhầm nhánh rỗng
+        if len(node.children[idx].keys) > (ORDER // 2):
             pred_key, pred_ptr = self._get_predecessor(node.children[idx])
             node.keys[idx] = pred_key
             node.data_pointers[idx] = pred_ptr
             self._delete_recursive(node.children[idx], pred_key)
-        elif len(node.children[idx + 1].keys) >= (ORDER // 2):
+            if len(node.children[idx].keys) < (ORDER // 2):
+                self._fill(node, idx)
+        elif len(node.children[idx + 1].keys) > (ORDER // 2): # Đổi dấu >= thành >
             succ_key, succ_ptr = self._get_successor(node.children[idx + 1])
             node.keys[idx] = succ_key
             node.data_pointers[idx] = succ_ptr
             self._delete_recursive(node.children[idx + 1], succ_key)
+            if len(node.children[idx + 1].keys) < (ORDER // 2):
+                self._fill(node, idx + 1)
         else:
             self._merge(node, idx)
             self._delete_recursive(node.children[idx], key)
+            if len(node.children[idx].keys) < (ORDER // 2):
+                self._fill(node, idx)
+
+    def _fill(self, node, idx):
+        # VÁ LỖI LOGIC: Đổi dấu >= thành > để mượn chuẩn xác
+        if idx != 0 and len(node.children[idx - 1].keys) > (ORDER // 2):
+            self._borrow_from_prev(node, idx)
+        elif idx != len(node.keys) and len(node.children[idx + 1].keys) > (ORDER // 2):
+            self._borrow_from_next(node, idx)
+        else:
+            if idx != len(node.keys): self._merge(node, idx)
+            else: self._merge(node, idx - 1)
 
     def _get_predecessor(self, node):
         while not node.is_leaf: node = node.children[-1]
@@ -189,16 +212,6 @@ class BTreeIndex:
         while not node.is_leaf: node = node.children[0]
         return node.keys[0], node.data_pointers[0]
 
-    def _fill(self, node, idx):
-        if idx != 0 and len(node.children[idx - 1].keys) >= (ORDER // 2):
-            self._borrow_from_prev(node, idx)
-        elif idx != len(node.keys) and len(node.children[idx + 1].keys) >= (ORDER // 2):
-            self._borrow_from_next(node, idx)
-        else:
-            if idx != len(node.keys):
-                self._merge(node, idx)
-            else:
-                self._merge(node, idx - 1)
 
     def _borrow_from_prev(self, node, idx):
         child = node.children[idx]

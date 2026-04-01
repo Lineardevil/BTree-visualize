@@ -27,7 +27,7 @@
                         <input type="text" id="inName" placeholder="Họ và tên">
                         <select id="inGender"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
                         <input type="text" id="inMajor" placeholder="Chuyên ngành (Tùy chọn)">
-                        <button id="btnInsert" onclick="insertStudent()" class="btn-primary">CHÈN VÀO HỆ THỐNG</button>
+                        <button id="btnInsert" onclick="insertStudent()" class="btn-primary">INSERT</button>
                     </div>
                 </section>
 
@@ -54,12 +54,11 @@
                             <button onclick="deleteStudent()" class="btn-danger">Xóa</button>
                         </div>
                     </div>
-                    <div id="quickSearchResult" class="result-box mt-10"></div>
                 </section>
 
                 <button onclick="resetSystem()" class="btn-refresh btn-block">
                     <svg class="icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                    HỆ THỐNG MỚI
+                    Reset system
                 </button>
             </div>
         </aside>
@@ -70,11 +69,11 @@
                 <nav class="app-nav-tabs">
                     <button class="nav-tab" onclick="switchTab('tab-data')">
                         <svg class="icon-sm" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-                        Dữ liệu Gốc
+                        Records Table
                     </button>
                     <button class="nav-tab active" onclick="switchTab('tab-tree')">
                         <svg class="icon-sm" viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-                        Cây Chỉ Mục
+                        B - TREE
                     </button>
                 </nav>
             </header>
@@ -84,7 +83,7 @@
                     <div class="table-header">
                         <h3>
                             <svg class="icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                            Danh sách gốc (Chưa sắp xếp)
+                            Danh sách sinh viên
                         </h3>
                         <span class="badge">Tổng cộng: <b id="totalCount">0</b></span>
                     </div>
@@ -100,7 +99,7 @@
             <div id="tab-tree" class="tab-content active">
                 <div class="visualizer-wrapper">
                     <div id="statusMsg" class="card" style="font-weight: 500; color: var(--primary);">
-                        >> Hệ thống sẵn sàng. Dữ liệu thay đổi sẽ được visualize tại đây...
+                        Ready to visualize
                     </div>
 
                     <div class="tree-controls card">
@@ -134,7 +133,7 @@
                         </button>
 
                         <button onclick="autoFitTree()" class="btn-focus" title="Tự động thu phóng để nhìn thấy toàn bộ Cây">
-                            <svg class="icon-inline" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> KHUNG NHÌN TỐI ƯU
+                            <svg class="icon-inline" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> FULL VIEW
                         </button>
                     </div>
 

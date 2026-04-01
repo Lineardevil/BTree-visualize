@@ -272,3 +272,28 @@ svg.icon-step { width: 20px; height: 20px; fill: none; stroke: currentColor; str
     50% { transform: translateY(-15px) scale(1.2); opacity: 1; box-shadow: 0 15px 25px rgba(231, 76, 60, 0.4); }
     100% { transform: translateY(0) scale(1); opacity: 1; box-shadow: none; }
 }
+
+/* =========================================
+   HIỆU ỨNG TÌM KIẾM DÒNG TRONG BẢNG (RECORD TABLE)
+========================================= */
+#heapTable tbody tr { transition: all 0.3s ease; }
+
+@keyframes highlightRowSuccess {
+    0% { background-color: rgba(46, 204, 113, 0.3); border-left: 6px solid #2ecc71; transform: scale(1.02); }
+    100% { background-color: transparent; border-left: 1px solid var(--border); transform: scale(1); }
+}
+
+@keyframes highlightRowDanger {
+    0% { background-color: rgba(231, 76, 60, 0.3); border-left: 6px solid #e74c3c; transform: scale(1.02); }
+    100% { background-color: transparent; border-left: 1px solid var(--border); transform: scale(1); }
+}
+
+.highlight-success { animation: highlightRowSuccess 2s cubic-bezier(0.25, 0.8, 0.25, 1); }
+.highlight-danger { animation: highlightRowDanger 1s cubic-bezier(0.25, 0.8, 0.25, 1); }
+
+/* Chuyển thanh thông báo (Toast) lên góc trên cùng bên phải */
+.toast-container {
+    top: 30px; /* Sửa từ bottom thành top */
+    bottom: auto;
+    right: 30px;
+}
