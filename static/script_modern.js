@@ -12,12 +12,17 @@ function switchTab(tabId) {
     document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
 
+    // Cập nhật tab active (1 = Data, 2 = Index, 3 = Tree)
     if (tabId === 'tab-data') {
         document.querySelector('.nav-tab:nth-child(1)').classList.add('active');
         fetchHeapData();
     }
-    if (tabId === 'tab-tree') {
+    if (tabId === 'tab-index') {
         document.querySelector('.nav-tab:nth-child(2)').classList.add('active');
+        fetchIndexData();
+    }
+    if (tabId === 'tab-tree') {
+        document.querySelector('.nav-tab:nth-child(3)').classList.add('active');
         updateTreeUI();
     }
 }
@@ -50,8 +55,9 @@ function showToast(message, type = 'error') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
 
-    const iconError = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
-    const iconSuccess = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+    // Icon tự thiết kế dạng inline SVG (Khối cơ bản)
+    const iconError = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>`;
+    const iconSuccess = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg>`;
 
     toast.innerHTML = `${type === 'error' ? iconError : iconSuccess} <span>${message}</span>`;
     container.appendChild(toast);
@@ -69,6 +75,20 @@ async function fetchHeapData() {
     const res = await fetch('/api/get_heap');
     const students = await res.json();
     renderHeapTable(students);
+}
+
+async function fetchIndexData() {
+    const res = await fetch('/api/get_index');
+    const entries = await res.json();
+    const tbody = document.querySelector('#indexTable tbody');
+    tbody.innerHTML = '';
+
+    entries.forEach(e => {
+        tbody.innerHTML += `<tr>
+            <td><span class="badge" style="background:var(--primary)">${e.mssv}</span></td>
+            <td style="font-family:monospace; color:#666;">${e.pointer}</td>
+        </tr>`;
+    });
 }
 
 async function insertStudent() {
@@ -102,6 +122,9 @@ async function insertStudent() {
             showToast(`Thêm thành công sinh viên ${paddedMssv}`, "success");
             renderHeapTable(result.full_heap);
 
+            // Cập nhật bảng Index ngầm nếu tab đang mở
+            if(document.getElementById('tab-index').classList.contains('active')) fetchIndexData();
+
             document.getElementById('inMssv').value = '';
             document.getElementById('inName').value = '';
             document.getElementById('inMajor').value = '';
@@ -133,6 +156,7 @@ async function addRandom(count) {
         if (result.status === 'ok') {
             showToast(`Đã thêm thành công ${count} mẫu dữ liệu`, "success");
             renderHeapTable(result.full_heap);
+            if(document.getElementById('tab-index').classList.contains('active')) fetchIndexData();
 
             if(result.steps && result.steps.length > 0) {
                 currentSteps = result.steps;
@@ -144,7 +168,7 @@ async function addRandom(count) {
                 } else {
                     currentStepIdx = currentSteps.length - 1;
                     switchTab('tab-tree');
-                    document.getElementById('statusMsg').innerHTML = `<span><svg class="icon-step" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> ⚡ Đã chèn nhanh ${count} mẫu. Cây đã được cập nhật.</span>`;
+                    document.getElementById('statusMsg').innerHTML = `<span>⚡ Đã chèn nhanh ${count} mẫu. Cây đã được cập nhật.</span>`;
                 }
             }
         } else {
@@ -155,16 +179,15 @@ async function addRandom(count) {
     }
 }
 
-// HÀM HỖ TRỢ: Tìm dòng trong bảng, cuộn chuột tới và bôi màu
 function highlightTableRow(mssv, type) {
-    const rows = document.querySelectorAll('#heapTable tbody tr');
+    // Kéo vào cả 2 bảng (Heap hoặc Index) nếu có tab đó đang mở
+    const tableId = document.getElementById('tab-index').classList.contains('active') ? '#indexTable' : '#heapTable';
+    const rows = document.querySelectorAll(`${tableId} tbody tr`);
     for (let row of rows) {
-        // Cột đầu tiên [0] chứa MSSV
         if (row.cells[0].innerText.trim() === mssv) {
             row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Gỡ class cũ nếu có, rồi gắn class mới để kích hoạt hiệu ứng chớp màu
             row.classList.remove('highlight-success', 'highlight-danger');
-            void row.offsetWidth; // Mẹo ép trình duyệt chạy lại animation
+            void row.offsetWidth;
             row.classList.add(`highlight-${type}`);
             break;
         }
@@ -188,17 +211,13 @@ async function searchStudent() {
         return showToast(`Thất bại: Không tìm thấy mã ${mssv}`, "error");
     }
 
-    // Nếu tìm thấy: Bắn thông báo xanh lên trên cùng
     showToast(`Tìm thấy: Sinh viên ${result.student.name}`, "success");
 
-    // KIỂM TRA NGỮ CẢNH: Người dùng đang ở Tab nào?
-    const isTableActive = document.getElementById('tab-data').classList.contains('active');
+    const isTreeActive = document.getElementById('tab-tree').classList.contains('active');
 
-    if (isTableActive) {
-        // Nếu ở Record Table -> Nhảy tới dòng đó và bôi màu viền Xanh
+    if (!isTreeActive) {
         highlightTableRow(mssv, 'success');
     } else {
-        // Nếu ở B-Tree -> Khởi chạy Animation vẽ cây như cũ
         if(result.steps && result.steps.length > 0) {
             currentSteps = result.steps;
             currentStepIdx = 0;
@@ -215,9 +234,8 @@ async function deleteStudent() {
 
     if(!confirm(`⚠ Xác nhận xóa sinh viên ${mssv}?`)) return;
 
-    // Nếu đang ở Table, bôi đỏ cảnh báo dòng sắp xóa trước khi gọi API
-    const isTableActive = document.getElementById('tab-data').classList.contains('active');
-    if (isTableActive) {
+    const isTreeActive = document.getElementById('tab-tree').classList.contains('active');
+    if (!isTreeActive) {
         highlightTableRow(mssv, 'danger');
     }
 
@@ -232,14 +250,13 @@ async function deleteStudent() {
         showToast(`Đã xóa thành công sinh viên ${mssv}`, "success");
         document.getElementById('inSearchDelete').value = '';
 
-        if (isTableActive) {
-            // Đợi 0.6s cho hiệu ứng bôi đỏ chạy xong rồi mới xóa dòng khỏi bảng
+        if (!isTreeActive) {
             setTimeout(() => {
                 renderHeapTable(result.full_heap);
+                if(document.getElementById('tab-index').classList.contains('active')) fetchIndexData();
             }, 600);
         } else {
-            // Nếu ở B-Tree -> Chạy animation gỡ node khỏi cây
-            renderHeapTable(result.full_heap); // Cập nhật ngầm
+            renderHeapTable(result.full_heap);
             currentSteps = result.steps;
             currentStepIdx = 0;
             startAnimation();
@@ -307,25 +324,16 @@ function updateTreeUI() {
     const step = currentSteps[currentStepIdx];
     if (!step) return;
 
-    let stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>`;
-    if (step.msg.includes("CẢNH BÁO")) {
-        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-    } else if (step.msg.includes("Đã đẩy")) {
-        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/><polyline points="18 21 12 15 6 21"/></svg>`;
-    } else if (step.msg.includes("Đã tách") || step.msg.includes("Nâng tầng")) {
-        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
-    } else if (step.msg.includes("Hoàn tất")) {
-        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
-    }
+    // Icon thông báo tự vẽ bằng khối SVG cơ bản
+    let stepIcon = `<svg class="icon-step" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>`;
 
-    document.getElementById('statusMsg').innerHTML = `<span>Step ${currentStepIdx + 1}: ${stepIcon}${step.msg}</span>`;
+    document.getElementById('statusMsg').innerHTML = `<span>Step ${currentStepIdx + 1}: ${stepIcon} ${step.msg}</span>`;
 
     const container = document.getElementById('tree-container');
     const svg = document.getElementById('svg-lines');
     const treeCard = document.querySelector('.tree-card');
 
     document.querySelectorAll('.node').forEach(n => n.dataset.keep = "false");
-    // FIX LỖI MẤT KÍNH LÚP: Chỉ target line bên trong #svg-lines
     document.querySelectorAll('#svg-lines line').forEach(l => l.dataset.keep = "false");
 
     const requiredWidth = calculateSubtreeWidth(step.tree);
@@ -358,7 +366,6 @@ function updateTreeUI() {
     drawNodeReconcile(step.tree, startX, startX + requiredWidth, 40, step.highlight, step.warning_id, isLastStep, null, isPushUpStep);
 
     document.querySelectorAll('.node[data-keep="false"]').forEach(n => n.remove());
-    // FIX LỖI MẤT KÍNH LÚP: Chỉ xóa line bên trong #svg-lines
     document.querySelectorAll('#svg-lines line[data-keep="false"]').forEach(l => l.remove());
 
     setTimeout(() => {
@@ -496,9 +503,9 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
 // ==========================================
 // ANIMATION CONTROLS
 // ==========================================
-const iconPause = `<svg class="icon-inline" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Tạm dừng`;
-const iconPlay = `<svg class="icon-inline" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Tiếp tục`;
-const iconReplay = `<svg class="icon-inline" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Chạy lại`;
+const iconPause = `<svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Tạm dừng`;
+const iconPlay = `<svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Tiếp tục`;
+const iconReplay = `<svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Chạy lại`;
 
 function updateSpeed(sliderValue) {
     const delays = [2000, 1600, 1200, 900, 700, 500, 300, 150, 100, 50];

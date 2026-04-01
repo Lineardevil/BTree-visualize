@@ -1,12 +1,20 @@
 from flask import Flask, render_template, request, jsonify
 import uuid
 import random
+from dotenv import load_dotenv
+from supabase import create_client, Client
+import os
+
+load_dotenv()
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = Flask(__name__)
 
 # --- ARCHITECTURE DESIGN ---
 student_heap_data = {}
-ORDER = 3  # B-Tree bậc 3
+ORDER = 3
 
 SAMPLE_NAMES = ["Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Minh D", "Hoàng Anh E", "Vũ Hoài F"]
 SAMPLE_MAJORS = ["CNTT", "Kinh Tế", "Cơ Khí", "Ngôn Ngữ Anh", "Luật"]
@@ -41,6 +49,24 @@ class BTreeIndex:
             "highlight": highlight_id,
             "warning_id": warning_node_id
         })
+
+    # --- BỔ SUNG: LẤY DANH SÁCH INDEX TABLE ---
+    def get_all_entries(self):
+        entries = []
+        self._in_order_traversal(self.root, entries)
+        return entries
+
+    def _in_order_traversal(self, node, entries):
+        for i in range(len(node.keys)):
+            if not node.is_leaf:
+                self._in_order_traversal(node.children[i], entries)
+            entries.append({
+                "mssv": node.keys[i],
+                "pointer": node.data_pointers[i]
+            })
+        if not node.is_leaf:
+            self._in_order_traversal(node.children[-1], entries)
+    # ------------------------------------------
 
     def insert(self, mssv, uuid_ptr):
         self.steps = []
@@ -162,18 +188,15 @@ class BTreeIndex:
 
             if is_last_child and idx > len(node.keys):
                 self._delete_recursive(node.children[idx - 1], key)
-                # FIX LỖI BÓNG MA: Dọn dẹp rác rỗng sau khi đệ quy về
                 if len(node.children[idx - 1].keys) < (ORDER // 2):
                     self._fill(node, idx - 1)
             else:
                 self._delete_recursive(node.children[idx], key)
-                # FIX LỖI BÓNG MA: Dọn dẹp rác rỗng sau khi đệ quy về
                 if len(node.children[idx].keys) < (ORDER // 2):
                     self._fill(node, idx)
 
     def _delete_from_non_leaf(self, node, idx):
         key = node.keys[idx]
-        # VÁ LỖI LOGIC: Đổi dấu >= thành > để tránh mượn nhầm nhánh rỗng
         if len(node.children[idx].keys) > (ORDER // 2):
             pred_key, pred_ptr = self._get_predecessor(node.children[idx])
             node.keys[idx] = pred_key
@@ -181,7 +204,7 @@ class BTreeIndex:
             self._delete_recursive(node.children[idx], pred_key)
             if len(node.children[idx].keys) < (ORDER // 2):
                 self._fill(node, idx)
-        elif len(node.children[idx + 1].keys) > (ORDER // 2): # Đổi dấu >= thành >
+        elif len(node.children[idx + 1].keys) > (ORDER // 2):
             succ_key, succ_ptr = self._get_successor(node.children[idx + 1])
             node.keys[idx] = succ_key
             node.data_pointers[idx] = succ_ptr
@@ -194,16 +217,6 @@ class BTreeIndex:
             if len(node.children[idx].keys) < (ORDER // 2):
                 self._fill(node, idx)
 
-    def _fill(self, node, idx):
-        # VÁ LỖI LOGIC: Đổi dấu >= thành > để mượn chuẩn xác
-        if idx != 0 and len(node.children[idx - 1].keys) > (ORDER // 2):
-            self._borrow_from_prev(node, idx)
-        elif idx != len(node.keys) and len(node.children[idx + 1].keys) > (ORDER // 2):
-            self._borrow_from_next(node, idx)
-        else:
-            if idx != len(node.keys): self._merge(node, idx)
-            else: self._merge(node, idx - 1)
-
     def _get_predecessor(self, node):
         while not node.is_leaf: node = node.children[-1]
         return node.keys[-1], node.data_pointers[-1]
@@ -212,6 +225,16 @@ class BTreeIndex:
         while not node.is_leaf: node = node.children[0]
         return node.keys[0], node.data_pointers[0]
 
+    def _fill(self, node, idx):
+        if idx != 0 and len(node.children[idx - 1].keys) > (ORDER // 2):
+            self._borrow_from_prev(node, idx)
+        elif idx != len(node.keys) and len(node.children[idx + 1].keys) > (ORDER // 2):
+            self._borrow_from_next(node, idx)
+        else:
+            if idx != len(node.keys):
+                self._merge(node, idx)
+            else:
+                self._merge(node, idx - 1)
 
     def _borrow_from_prev(self, node, idx):
         child = node.children[idx]
@@ -245,10 +268,35 @@ class BTreeIndex:
         node.children.pop(idx + 1)
 
 
-# --- Khởi tạo hệ thống ---
+# ==========================================
+# KHỞI TẠO VÀ ĐỒNG BỘ DỮ LIỆU TỪ SUPABASE
+# ==========================================
 btree_index = BTreeIndex()
 
 
+def sync_db_to_tree():
+    global btree_index, student_heap_data
+    btree_index = BTreeIndex()
+    student_heap_data = {}
+
+    try:
+        res = supabase.table("students").select("*").execute()
+        for row in res.data:
+            student_heap_data[row['id']] = row
+            btree_index.insert(row['mssv'], row['id'])
+
+        btree_index.steps = []
+        print(f"✅ Đã đồng bộ thành công {len(res.data)} bản ghi từ Supabase.")
+    except Exception as e:
+        print("❌ Lỗi cấu hình Supabase hoặc rớt mạng:", e)
+
+
+sync_db_to_tree()
+
+
+# ==========================================
+# CÁC API ROUTE
+# ==========================================
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -264,11 +312,17 @@ def api_add():
 
     student_id = str(uuid.uuid4())
     new_student = {
+        "id": student_id,
         "mssv": mssv,
         "name": data.get('name', 'N/A'),
         "gender": data.get('gender', 'Nam'),
         "major": data.get('major', '')
     }
+
+    try:
+        supabase.table("students").insert(new_student).execute()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": "Lỗi lưu Database Cloud!"})
 
     student_heap_data[student_id] = new_student
     steps = btree_index.insert(mssv, student_id)
@@ -280,6 +334,7 @@ def api_add():
 def api_add_random():
     count = request.json.get('count', 1)
     all_steps = []
+    new_batch = []
 
     for _ in range(count):
         while True:
@@ -288,14 +343,24 @@ def api_add_random():
                 break
 
         student_id = str(uuid.uuid4())
-        student_heap_data[student_id] = {
+        new_student = {
+            "id": student_id,
             "mssv": rand_mssv,
             "name": random.choice(SAMPLE_NAMES),
             "gender": random.choice(["Nam", "Nữ"]),
             "major": random.choice(SAMPLE_MAJORS)
         }
+
+        new_batch.append(new_student)
+        student_heap_data[student_id] = new_student
         steps = btree_index.insert(rand_mssv, student_id)
         all_steps.extend(steps)
+
+    if new_batch:
+        try:
+            supabase.table("students").insert(new_batch).execute()
+        except Exception as e:
+            pass
 
     return jsonify({"status": "ok", "full_heap": list(student_heap_data.values()), "steps": all_steps})
 
@@ -303,6 +368,12 @@ def api_add_random():
 @app.route("/api/get_heap", methods=["GET"])
 def api_get_heap():
     return jsonify(list(student_heap_data.values()))
+
+
+# --- API MỚI: LẤY DỮ LIỆU INDEX TABLE ---
+@app.route("/api/get_index", methods=["GET"])
+def api_get_index():
+    return jsonify(btree_index.get_all_entries())
 
 
 @app.route("/api/search", methods=["POST"])
@@ -325,6 +396,11 @@ def api_delete():
     if not uuid_ptr:
         return jsonify({"status": "error", "msg": "Không tìm thấy để xóa!"})
 
+    try:
+        supabase.table("students").delete().eq("mssv", mssv).execute()
+    except Exception as e:
+        return jsonify({"status": "error", "msg": "Lỗi Database Cloud!"})
+
     steps = btree_index.delete(mssv)
     del student_heap_data[uuid_ptr]
 
@@ -334,6 +410,11 @@ def api_delete():
 @app.route("/reset", methods=["POST"])
 def reset():
     global btree_index, student_heap_data
+    try:
+        supabase.table("students").delete().neq("mssv", "00000000").execute()
+    except:
+        pass
+
     btree_index = BTreeIndex()
     student_heap_data = {}
     return jsonify({"msg": "SYSTEM REFRESHED"})

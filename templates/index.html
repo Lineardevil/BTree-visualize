@@ -12,14 +12,25 @@
     <div class="app-wrapper">
         <aside class="app-sidebar">
             <div class="brand">
-                <svg class="icon-brand" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <!-- Icon Brand vẽ tay (2 hình thoi xếp chồng) -->
+                <svg class="icon-brand" viewBox="0 0 24 24">
+                    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" fill="none"/>
+                    <rect x="10" y="10" width="12" height="12" rx="2" stroke="currentColor" fill="none"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                </svg>
                 <h1>SIS_CORE V3</h1>
             </div>
 
             <div class="sidebar-controls">
                 <section class="card control-card">
                     <h3>
-                        <svg class="icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        <!-- Icon User + Dấu cộng vẽ tay -->
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <circle cx="10" cy="8" r="4" stroke="currentColor" fill="none"/>
+                            <path d="M4 20c0-4 4-6 6-6" stroke="currentColor" fill="none"/>
+                            <line x1="18" y1="12" x2="18" y2="20" stroke="currentColor"/>
+                            <line x1="14" y1="16" x2="22" y2="16" stroke="currentColor"/>
+                        </svg>
                         Thêm Sinh Viên
                     </h3>
                     <div class="input-form vertical-form">
@@ -33,7 +44,12 @@
 
                 <section class="card control-card">
                     <h3>
-                        <svg class="icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <!-- Icon Random (Khối lập phương xí ngầu) -->
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" fill="none"/>
+                            <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+                            <circle cx="16" cy="16" r="1.5" fill="currentColor"/>
+                        </svg>
                         Thêm dữ liệu mẫu
                     </h3>
                     <div class="grid-2-btn">
@@ -44,12 +60,16 @@
 
                 <section class="card control-card">
                     <h3>
-                        <svg class="icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <!-- Icon Action (Mũi tên mục tiêu) -->
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none" stroke-dasharray="4 4"/>
+                            <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                        </svg>
                         Hành động nhanh
                     </h3>
                     <div class="action-inputs">
                         <input type="text" id="inSearchDelete" placeholder="Nhập MSSV..." maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                        <div class="grid-2-btn">
+                        <div class="grid-2-btn mt-10">
                             <button onclick="searchStudent()" class="btn-search">Tìm kiếm</button>
                             <button onclick="deleteStudent()" class="btn-danger">Xóa</button>
                         </div>
@@ -57,7 +77,11 @@
                 </section>
 
                 <button onclick="resetSystem()" class="btn-refresh btn-block">
-                    <svg class="icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    <!-- Icon Reset (Mũi tên xoay vòng tròn) -->
+                    <svg class="icon-sm" viewBox="0 0 24 24">
+                        <path d="M3 12a9 9 0 0 0 18 0a9 9 0 0 0-9-9v4" stroke="currentColor" fill="none"/>
+                        <polyline points="8 3 12 7 16 3" stroke="currentColor" fill="none"/>
+                    </svg>
                     Reset system
                 </button>
             </div>
@@ -67,24 +91,43 @@
             <header class="app-header">
                 <h2>Bảng Quan Sát</h2>
                 <nav class="app-nav-tabs">
+                    <!-- TAB 1: Bảng Gốc -->
                     <button class="nav-tab" onclick="switchTab('tab-data')">
-                        <svg class="icon-sm" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <rect x="2" y="4" width="20" height="4" rx="1" stroke="currentColor" fill="none"/>
+                            <rect x="2" y="10" width="20" height="4" rx="1" stroke="currentColor" fill="none"/>
+                            <rect x="2" y="16" width="20" height="4" rx="1" stroke="currentColor" fill="none"/>
+                        </svg>
                         Records Table
                     </button>
+                    <!-- TAB 2: Index Table (MỚI THÊM) -->
+                    <button class="nav-tab" onclick="switchTab('tab-index')">
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <path d="M4 4h6v16H4zM14 4h6v16h-6z" stroke="currentColor" fill="none"/>
+                            <line x1="4" y1="8" x2="10" y2="8" stroke="currentColor"/>
+                            <line x1="14" y1="12" x2="20" y2="12" stroke="currentColor"/>
+                        </svg>
+                        Index Map
+                    </button>
+                    <!-- TAB 3: B-Tree -->
                     <button class="nav-tab active" onclick="switchTab('tab-tree')">
-                        <svg class="icon-sm" viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                        <svg class="icon-sm" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="3" stroke="currentColor" fill="none"/>
+                            <circle cx="5" cy="18" r="3" stroke="currentColor" fill="none"/>
+                            <circle cx="19" cy="18" r="3" stroke="currentColor" fill="none"/>
+                            <line x1="10" y1="7" x2="6" y2="15" stroke="currentColor"/>
+                            <line x1="14" y1="7" x2="18" y2="15" stroke="currentColor"/>
+                        </svg>
                         B - TREE
                     </button>
                 </nav>
             </header>
 
+            <!-- NỘI DUNG TAB 1 -->
             <div id="tab-data" class="tab-content">
                 <section class="table-section card">
                     <div class="table-header">
-                        <h3>
-                            <svg class="icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                            Danh sách sinh viên
-                        </h3>
+                        <h3>Danh sách sinh viên gốc</h3>
                         <span class="badge">Tổng cộng: <b id="totalCount">0</b></span>
                     </div>
                     <div class="table-container">
@@ -96,6 +139,25 @@
                 </section>
             </div>
 
+            <!-- NỘI DUNG TAB 2 (BẢNG INDEX - MỚI) -->
+            <div id="tab-index" class="tab-content">
+                <section class="table-section card">
+                    <div class="table-header">
+                        <h3>Cấu trúc Bảng Chỉ Mục (Key → Pointer)</h3>
+                    </div>
+                    <div class="table-container">
+                        <table id="indexTable">
+                            <thead><tr><th>KHÓA (MSSV)</th><th>CON TRỎ (ĐỊA CHỈ TRÊN RAM/UUID)</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <p style="font-size: 13px; color: #7f8c8d; margin-top: 15px;">
+                        * Đây là bảng mô phỏng dữ liệu nằm trong bộ nhớ Index. B-Tree sử dụng bảng này để tra cứu địa chỉ thực của sinh viên mà không cần duyệt lại Bảng Gốc.
+                    </p>
+                </section>
+            </div>
+
+            <!-- NỘI DUNG TAB 3 (CÂY B-TREE) -->
             <div id="tab-tree" class="tab-content active">
                 <div class="visualizer-wrapper">
                     <div id="statusMsg" class="card" style="font-weight: 500; color: var(--primary);">
@@ -104,19 +166,17 @@
 
                     <div class="tree-controls card">
                         <div class="speed-slider-container" title="Điều chỉnh tốc độ Animation">
-                            <svg class="icon-inline" viewBox="0 0 24 24" style="color:#7f8c8d; margin:0;"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
                             <input type="range" id="speedSlider" min="1" max="10" value="6" oninput="updateSpeed(this.value)">
-                            <svg class="icon-inline" viewBox="0 0 24 24" style="color:#7f8c8d; margin:0;"><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></svg>
                         </div>
 
                         <button onclick="togglePlay()" id="btnPlay" style="font-weight: bold; color: var(--primary);">
-                            <svg class="icon-inline" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Bắt đầu
+                            <svg class="icon-inline" viewBox="0 0 24 24" stroke="currentColor" fill="none"><polygon points="5 3 19 12 5 21 5 3"/></svg> Bắt đầu
                         </button>
 
                         <span class="divider">|</span>
 
                         <button onclick="zoomTree(-0.1)" class="btn-icon" title="Thu nhỏ (Zoom Out)" style="color: #2c3e50;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 <line x1="8" y1="11" x2="14" y2="11"></line>
@@ -124,7 +184,7 @@
                         </button>
 
                         <button onclick="zoomTree(0.1)" class="btn-icon" title="Phóng to (Zoom In)" style="color: #2c3e50;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 <line x1="11" y1="8" x2="11" y2="14"></line>
@@ -133,7 +193,7 @@
                         </button>
 
                         <button onclick="autoFitTree()" class="btn-focus" title="Tự động thu phóng để nhìn thấy toàn bộ Cây">
-                            <svg class="icon-inline" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> FULL VIEW
+                            <svg class="icon-inline" viewBox="0 0 24 24" stroke="currentColor" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg> FULL VIEW
                         </button>
                     </div>
 
