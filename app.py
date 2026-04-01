@@ -5,10 +5,18 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import os
 
+# Nạp biến môi trường từ file .env (chạy local) hoặc từ cấu hình Vercel
 load_dotenv()
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# VERCEL FIX: Khởi tạo an toàn, tránh sập Server nếu quên cấu hình Key
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+else:
+    supabase = None
+    print("⚠️ CẢNH BÁO: Chưa cấu hình SUPABASE_URL và SUPABASE_KEY!")
 
 app = Flask(__name__)
 
@@ -277,6 +285,10 @@ def sync_db_to_tree():
     btree_index = BTreeIndex()
     student_heap_data = {}
 
+    if supabase is None:
+        print("Bỏ qua đồng bộ vì chưa có kết nối Supabase.")
+        return
+
     try:
         res = supabase.table("students").select("*").execute()
         for row in res.data:
@@ -297,7 +309,6 @@ sync_db_to_tree()
 def index():
     return render_template("index.html")
 
-# --- MỚI: API GỘP DUY NHẤT ĐỂ CHỐNG LỖI 500 TRÊN VERCEL ---
 @app.route("/api/init_data", methods=["GET"])
 def api_init_data():
     return jsonify({
@@ -328,10 +339,11 @@ def api_add():
         "major": data.get('major', '')
     }
 
-    try:
-        supabase.table("students").insert(new_student).execute()
-    except Exception as e:
-        return jsonify({"status": "error", "msg": "Lỗi lưu Database Cloud!"})
+    if supabase:
+        try:
+            supabase.table("students").insert(new_student).execute()
+        except Exception as e:
+            return jsonify({"status": "error", "msg": "Lỗi lưu Database Cloud!"})
 
     student_heap_data[student_id] = new_student
     steps = btree_index.insert(mssv, student_id)
@@ -364,7 +376,7 @@ def api_add_random():
         steps = btree_index.insert(rand_mssv, student_id)
         all_steps.extend(steps)
 
-    if new_batch:
+    if supabase and new_batch:
         try:
             supabase.table("students").insert(new_batch).execute()
         except Exception as e:
@@ -399,10 +411,11 @@ def api_delete():
     if not uuid_ptr:
         return jsonify({"status": "error", "msg": "Không tìm thấy để xóa!"})
 
-    try:
-        supabase.table("students").delete().eq("mssv", mssv).execute()
-    except Exception as e:
-        return jsonify({"status": "error", "msg": "Lỗi Database Cloud!"})
+    if supabase:
+        try:
+            supabase.table("students").delete().eq("mssv", mssv).execute()
+        except Exception as e:
+            return jsonify({"status": "error", "msg": "Lỗi Database Cloud!"})
 
     steps = btree_index.delete(mssv)
     del student_heap_data[uuid_ptr]
@@ -412,14 +425,16 @@ def api_delete():
 @app.route("/reset", methods=["POST"])
 def reset():
     global btree_index, student_heap_data
-    try:
-        supabase.table("students").delete().neq("mssv", "00000000").execute()
-    except:
-        pass
+    if supabase:
+        try:
+            supabase.table("students").delete().neq("mssv", "00000000").execute()
+        except:
+            pass
 
     btree_index = BTreeIndex()
     student_heap_data = {}
     return jsonify({"msg": "SYSTEM REFRESHED"})
 
+# Cần thiết cho Vercel (để biết app là entry point)
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
