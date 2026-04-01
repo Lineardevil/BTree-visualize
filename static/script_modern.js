@@ -291,7 +291,8 @@ function updateTreeUI() {
     const treeCard = document.querySelector('.tree-card');
 
     document.querySelectorAll('.node').forEach(n => n.dataset.keep = "false");
-    document.querySelectorAll('line').forEach(l => l.dataset.keep = "false");
+    // FIX LỖI MẤT KÍNH LÚP: Chỉ target line bên trong #svg-lines
+    document.querySelectorAll('#svg-lines line').forEach(l => l.dataset.keep = "false");
 
     const requiredWidth = calculateSubtreeWidth(step.tree);
     const depth = getTreeDepth(step.tree);
@@ -323,7 +324,8 @@ function updateTreeUI() {
     drawNodeReconcile(step.tree, startX, startX + requiredWidth, 40, step.highlight, step.warning_id, isLastStep, null, isPushUpStep);
 
     document.querySelectorAll('.node[data-keep="false"]').forEach(n => n.remove());
-    document.querySelectorAll('line[data-keep="false"]').forEach(l => l.remove());
+    // FIX LỖI MẤT KÍNH LÚP: Chỉ xóa line bên trong #svg-lines
+    document.querySelectorAll('#svg-lines line[data-keep="false"]').forEach(l => l.remove());
 
     setTimeout(() => {
         const activeNode = container.querySelector('.warning-node') || container.querySelector('.active-node') || container.querySelector('.success-node');
