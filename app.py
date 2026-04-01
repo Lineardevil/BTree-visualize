@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # --- ARCHITECTURE DESIGN ---
 student_heap_data = {}
-ORDER = 3  # B-Tree bậc 3 (Max 2 keys, Min 1 key trừ gốc)
+ORDER = 3  # B-Tree bậc 3
 
 SAMPLE_NAMES = ["Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Minh D", "Hoàng Anh E", "Vũ Hoài F"]
 SAMPLE_MAJORS = ["CNTT", "Kinh Tế", "Cơ Khí", "Ngôn Ngữ Anh", "Luật"]
@@ -50,7 +50,7 @@ class BTreeIndex:
             mid_idx = len(self.root.keys) // 2
             mid_key = self.root.keys[mid_idx]
 
-            self.record_step(f"🚨 CẢNH BÁO: Nút gốc đã đầy! Sẽ tách và đẩy {mid_key} lên làm gốc mới.",
+            self.record_step(f"CẢNH BÁO NỔ: Nút gốc bị đầy! Chuẩn bị tách và đẩy {mid_key} lên làm gốc mới.",
                              highlight_id=mid_key, warning_node_id=self.root.id)
 
             new_root = BTreeNode(is_leaf=False)
@@ -58,9 +58,9 @@ class BTreeIndex:
             self._split_child(new_root, 0)
             self.root = new_root
 
-            self.record_step(f"⬆️ Đã đẩy {mid_key} lên làm gốc mới.", highlight_id=mid_key)
+            self.record_step(f"Đã đẩy {mid_key} lên làm gốc mới.", highlight_id=mid_key)
 
-        self.record_step(f"🎉 Hoàn tất chèn {mssv} vào cây Index.", highlight_id=mssv)
+        self.record_step(f"Hoàn tất chèn {mssv} vào cây Index.", highlight_id=mssv)
         return self.steps
 
     def _insert_recursive(self, node, mssv, uuid_ptr):
@@ -68,13 +68,15 @@ class BTreeIndex:
 
         if node.is_leaf:
             i = 0
-            while i < len(node.keys) and mssv > node.keys[i]: i += 1
+            while i < len(node.keys) and mssv > node.keys[i]:
+                i += 1
             node.keys.insert(i, mssv)
             node.data_pointers.insert(i, uuid_ptr)
-            self.record_step(f"Đã chèn {mssv} vào Node lá.", highlight_id=mssv)
+            self.record_step(f"Duyệt cây: Chèn {mssv} vào Node lá.", highlight_id=mssv)
         else:
             i = len(node.keys) - 1
-            while i >= 0 and mssv < node.keys[i]: i -= 1
+            while i >= 0 and mssv < node.keys[i]:
+                i -= 1
             i += 1
 
             self._insert_recursive(node.children[i], mssv, uuid_ptr)
@@ -83,10 +85,10 @@ class BTreeIndex:
                 mid_idx = len(node.children[i].keys) // 2
                 mid_key = node.children[i].keys[mid_idx]
 
-                self.record_step(f"🚨 CẢNH BÁO: Nhánh bị đầy! Sẽ tách và đẩy {mid_key} lên nút cha.",
+                self.record_step(f"CẢNH BÁO NỔ: Nhánh chứa {mssv} bị đầy! Sẽ tách và đẩy {mid_key} lên nút cha.",
                                  highlight_id=mid_key, warning_node_id=node.children[i].id)
                 self._split_child(node, i)
-                self.record_step(f"⬆️ Đã đẩy {mid_key} lên nút cha.", highlight_id=mid_key)
+                self.record_step(f"Đã đẩy {mid_key} lên nút cha.", highlight_id=mid_key)
 
     def _split_child(self, parent, i):
         node = parent.children[i]
@@ -117,7 +119,8 @@ class BTreeIndex:
     def _search_recursive(self, node, mssv):
         self.record_step(f"Đang kiểm tra nhóm: {node.keys}")
         i = 0
-        while i < len(node.keys) and mssv > node.keys[i]: i += 1
+        while i < len(node.keys) and mssv > node.keys[i]:
+            i += 1
 
         if i < len(node.keys) and mssv == node.keys[i]:
             self.record_step(f"Đã tìm thấy {mssv}!", highlight_id=mssv)
@@ -140,7 +143,8 @@ class BTreeIndex:
     def _delete_recursive(self, node, key):
         self.record_step(f"Xem xét xóa ở nhóm: {node.keys}")
         idx = 0
-        while idx < len(node.keys) and key > node.keys[idx]: idx += 1
+        while idx < len(node.keys) and key > node.keys[idx]:
+            idx += 1
 
         if idx < len(node.keys) and key == node.keys[idx]:
             if node.is_leaf:
@@ -228,17 +232,18 @@ class BTreeIndex:
         node.children.pop(idx + 1)
 
 
+# --- Khởi tạo hệ thống ---
 btree_index = BTreeIndex()
 
 
 @app.route("/")
-def index(): return render_template("index.html")
+def index():
+    return render_template("index.html")
 
 
 @app.route("/api/add_student", methods=["POST"])
 def api_add():
     data = request.json
-    # MSSV được gửi từ JS đã tự động chèn thêm số 0, là kiểu chuỗi
     mssv = str(data['mssv']).zfill(8)
 
     if any(st['mssv'] == mssv for st in student_heap_data.values()):
@@ -249,8 +254,9 @@ def api_add():
         "mssv": mssv,
         "name": data.get('name', 'N/A'),
         "gender": data.get('gender', 'Nam'),
-        "major": data.get('major', '')  # Có thể để trống
+        "major": data.get('major', '')
     }
+
     student_heap_data[student_id] = new_student
     steps = btree_index.insert(mssv, student_id)
 
@@ -261,9 +267,9 @@ def api_add():
 def api_add_random():
     count = request.json.get('count', 1)
     all_steps = []
+
     for _ in range(count):
         while True:
-            # Tự động chèn số 0 để luôn đủ 8 ký tự
             rand_mssv = str(random.randint(1, 99999999)).zfill(8)
             if not any(st['mssv'] == rand_mssv for st in student_heap_data.values()):
                 break
@@ -290,8 +296,11 @@ def api_get_heap():
 def api_search():
     mssv = str(request.json['mssv']).zfill(8)
     uuid_ptr, steps = btree_index.search(mssv)
+
     student_data = None
-    if uuid_ptr: student_data = student_heap_data.get(uuid_ptr)
+    if uuid_ptr:
+        student_data = student_heap_data.get(uuid_ptr)
+
     return jsonify({"student": student_data, "steps": steps})
 
 
@@ -299,11 +308,14 @@ def api_search():
 def api_delete():
     mssv = str(request.json['mssv']).zfill(8)
     uuid_ptr, _ = btree_index.search(mssv)
-    if not uuid_ptr: return jsonify({"status": "error", "msg": "Không tìm thấy để xóa!"})
+
+    if not uuid_ptr:
+        return jsonify({"status": "error", "msg": "Không tìm thấy để xóa!"})
 
     steps = btree_index.delete(mssv)
     del student_heap_data[uuid_ptr]
-    return jsonify({"status": "ok", "steps": steps})
+
+    return jsonify({"status": "ok", "steps": steps, "full_heap": list(student_heap_data.values())})
 
 
 @app.route("/reset", methods=["POST"])

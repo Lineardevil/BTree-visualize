@@ -1,9 +1,12 @@
 let currentSteps = [];
 let currentStepIdx = 0;
 let autoPlayTimer = null;
-let animationSpeed = 700;
+let animationSpeed = 500;
 let currentScale = 1;
 
+// ==========================================
+// UI CONTROLS & UTILS
+// ==========================================
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
@@ -23,6 +26,7 @@ function renderHeapTable(students) {
     const tbody = document.querySelector('#heapTable tbody');
     const totalCount = document.getElementById('totalCount');
     tbody.innerHTML = '';
+
     students.forEach(s => {
         tbody.innerHTML += `<tr>
             <td><b style="color:var(--primary)">${s.mssv}</b></td>
@@ -34,18 +38,44 @@ function renderHeapTable(students) {
     totalCount.innerText = students.length;
 }
 
+function showToast(message, type = 'error') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const iconError = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+    const iconSuccess = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+
+    toast.innerHTML = `${type === 'error' ? iconError : iconSuccess} <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'fadeOutDown 0.4s ease forwards';
+        setTimeout(() => toast.remove(), 400);
+    }, 3500);
+}
+
+// ==========================================
+// API ACTIONS
+// ==========================================
 async function fetchHeapData() {
     const res = await fetch('/api/get_heap');
     const students = await res.json();
     renderHeapTable(students);
 }
 
-// --- CÁC HÀNH ĐỘNG API ---
 async function insertStudent() {
     const btn = document.getElementById('btnInsert');
     let rawMssv = document.getElementById('inMssv').value.trim();
-    if(!rawMssv) return alert("❌ Vui lòng nhập MSSV!");
 
+    if(!rawMssv) return showToast("Vui lòng nhập MSSV!", "error");
     let paddedMssv = rawMssv.padStart(8, '0');
 
     const data = {
@@ -55,9 +85,10 @@ async function insertStudent() {
         major: document.getElementById('inMajor').value.trim()
     }
 
-    if(!data.name) return alert("❌ Vui lòng nhập họ và tên!");
+    if(!data.name) return showToast("Vui lòng nhập họ và tên!", "error");
 
-    btn.innerText = "⏳ ĐANG CHÈN..."; btn.disabled = true;
+    btn.innerText = "⏳ ĐANG CHÈN...";
+    btn.disabled = true;
 
     try {
         const res = await fetch('/api/add_student', {
@@ -68,7 +99,9 @@ async function insertStudent() {
         const result = await res.json();
 
         if(result.status === 'ok') {
+            showToast(`Thêm thành công sinh viên ${paddedMssv}`, "success");
             renderHeapTable(result.full_heap);
+
             document.getElementById('inMssv').value = '';
             document.getElementById('inName').value = '';
             document.getElementById('inMajor').value = '';
@@ -78,44 +111,53 @@ async function insertStudent() {
             switchTab('tab-tree');
             startAnimation();
         } else {
-            alert(result.msg);
+            showToast(result.msg, "error");
         }
-    } catch (e) { alert("Lỗi kết nối server!"); }
-    btn.innerText = "CHÈN VÀO HỆ THỐNG"; btn.disabled = false;
+    } catch (e) {
+        showToast("Lỗi kết nối server!", "error");
+    }
+
+    btn.innerText = "CHÈN VÀO HỆ THỐNG";
+    btn.disabled = false;
 }
 
 async function addRandom(count) {
-    const res = await fetch('/api/add_random', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ count })
-    });
-    const result = await res.json();
+    try {
+        const res = await fetch('/api/add_random', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ count })
+        });
+        const result = await res.json();
 
-    if (result.status === 'ok') {
-        renderHeapTable(result.full_heap);
-        if(result.steps && result.steps.length > 0) {
-            currentSteps = result.steps;
+        if (result.status === 'ok') {
+            showToast(`Đã thêm thành công ${count} mẫu dữ liệu`, "success");
+            renderHeapTable(result.full_heap);
 
-            if (count === 1) {
-                currentStepIdx = 0;
-                switchTab('tab-tree');
-                startAnimation();
-            } else {
-                currentStepIdx = currentSteps.length - 1;
-                if(document.getElementById('tab-tree').classList.contains('active')) {
-                    updateTreeUI();
+            if(result.steps && result.steps.length > 0) {
+                currentSteps = result.steps;
+
+                if (count === 1) {
+                    currentStepIdx = 0;
+                    switchTab('tab-tree');
+                    startAnimation();
                 } else {
-                    document.getElementById('statusMsg').innerHTML = `>> Đã thêm ${count} mẫu dữ liệu. Cây đã được cập nhật.`;
+                    currentStepIdx = currentSteps.length - 1;
+                    switchTab('tab-tree');
+                    document.getElementById('statusMsg').innerHTML = `<span><svg class="icon-step" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> ⚡ Đã chèn nhanh ${count} mẫu. Cây đã được cập nhật.</span>`;
                 }
             }
+        } else {
+            showToast(result.msg, "error");
         }
+    } catch (e) {
+        showToast("Lỗi kết nối server!", "error");
     }
 }
 
 async function searchStudent() {
     let rawMssv = document.getElementById('inSearchDelete').value.trim();
-    if(!rawMssv) return;
+    if(!rawMssv) return showToast("Nhập MSSV cần tìm!", "error");
 
     let mssv = rawMssv.padStart(8, '0');
 
@@ -144,7 +186,8 @@ async function searchStudent() {
 
 async function deleteStudent() {
     let rawMssv = document.getElementById('inSearchDelete').value.trim();
-    if(!rawMssv) return;
+    if(!rawMssv) return showToast("Nhập MSSV cần xóa!", "error");
+
     let mssv = rawMssv.padStart(8, '0');
 
     if(!confirm(`⚠️ Xác nhận xóa sinh viên ${mssv}?`)) return;
@@ -157,7 +200,9 @@ async function deleteStudent() {
     const result = await res.json();
 
     if(result.status === 'ok') {
+        showToast(`Đã xóa sinh viên ${mssv}`, "success");
         renderHeapTable(result.full_heap);
+
         document.getElementById('inSearchDelete').value = '';
         document.getElementById('quickSearchResult').innerHTML = '';
 
@@ -166,11 +211,19 @@ async function deleteStudent() {
         switchTab('tab-tree');
         startAnimation();
     } else {
-        alert(result.msg);
+        showToast(result.msg, "error");
     }
 }
 
-// --- VISUALIZER ENGINE ---
+async function resetSystem() {
+    if(!confirm("🔄 CẢNH BÁO: Reset toàn bộ dữ liệu hệ thống?")) return;
+    await fetch('/reset', { method: 'POST' });
+    location.reload();
+}
+
+// ==========================================
+// B-TREE VISUALIZER ENGINE
+// ==========================================
 function getTreeDepth(node) {
     if (!node) return 0;
     if (node.is_leaf || !node.children || node.children.length === 0) return 1;
@@ -216,8 +269,22 @@ function isIdInTree(node, id) {
 
 function updateTreeUI() {
     if (currentSteps.length === 0) return;
+
     const step = currentSteps[currentStepIdx];
-    document.getElementById('statusMsg').innerHTML = `>> Step ${currentStepIdx + 1}: ${step.msg}`;
+    if (!step) return;
+
+    let stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>`;
+    if (step.msg.includes("CẢNH BÁO")) {
+        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+    } else if (step.msg.includes("Đã đẩy")) {
+        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/><polyline points="18 21 12 15 6 21"/></svg>`;
+    } else if (step.msg.includes("Đã tách") || step.msg.includes("Nâng tầng")) {
+        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;
+    } else if (step.msg.includes("Hoàn tất")) {
+        stepIcon = `<svg class="icon-step" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+    }
+
+    document.getElementById('statusMsg').innerHTML = `<span>Step ${currentStepIdx + 1}: ${stepIcon}${step.msg}</span>`;
 
     const container = document.getElementById('tree-container');
     const svg = document.getElementById('svg-lines');
@@ -341,11 +408,8 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
     if (!node.is_leaf && node.children) {
         let currentX = xCenter - (node.subtreeWidth / 2);
         const GAP = 50;
-
-        // --- VÁ LỖI TOÁN HỌC: CHIA ĐIỂM XUẤT PHÁT CỦA CÁC ĐƯỜNG NỐI ---
-        const keyWidth = 96; // Chiều rộng ước tính chuẩn xác của 1 ô chứa MSSV
+        const keyWidth = 96;
         const totalKeys = node.keys.length;
-        // Tính điểm tận cùng bên trái của Node cha
         const parentLeftX = xCenter - ((totalKeys * keyWidth) / 2);
 
         node.children.forEach((child, i) => {
@@ -354,8 +418,6 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
             const childXRight = currentX + childWidth;
             const childXCenter = (childXLeft + childXRight) / 2;
             const childY = y + 120;
-
-            // Tính điểm xuất phát của nét vẽ dựa vào vị trí của nhánh con (0, 1, 2...)
             const startX = parentLeftX + (i * keyWidth);
 
             const lineId = `line-${nodeId}-to-${child.id}`;
@@ -364,7 +426,6 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
             if (!line) {
                 line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 line.id = lineId;
-                // Bắt đầu vẽ từ ranh giới giữa các key thay vì xCenter
                 line.setAttribute("x1", startX);
                 line.setAttribute("y1", y + 42);
                 line.setAttribute("x2", startX);
@@ -396,10 +457,22 @@ function drawNodeReconcile(node, xLeft, xRight, y, highlightId, warningId, isLas
     }
 }
 
-// CÁC HẰNG SỐ CHỨA MÃ SVG CHO NÚT PLAY/PAUSE
+// ==========================================
+// ANIMATION CONTROLS
+// ==========================================
 const iconPause = `<svg class="icon-inline" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Tạm dừng`;
 const iconPlay = `<svg class="icon-inline" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Tiếp tục`;
 const iconReplay = `<svg class="icon-inline" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Chạy lại`;
+
+function updateSpeed(sliderValue) {
+    const delays = [2000, 1600, 1200, 900, 700, 500, 300, 150, 100, 50];
+    animationSpeed = delays[sliderValue - 1];
+
+    if (autoPlayTimer) {
+        clearInterval(autoPlayTimer);
+        autoPlayTimer = setInterval(playNextStep, animationSpeed);
+    }
+}
 
 function startAnimation() {
     if(autoPlayTimer) clearInterval(autoPlayTimer);
@@ -441,17 +514,27 @@ function togglePlay() {
     }
 }
 
-function changeSpeed(delta) {
-    animationSpeed += delta * 150;
-    if(animationSpeed < 100) animationSpeed = 100;
-    if(animationSpeed > 2000) animationSpeed = 2000;
-    if(autoPlayTimer) startAnimation();
-}
-
 function zoomTree(delta) {
+    if (currentSteps.length === 0) return;
+
+    const treeCard = document.querySelector('.tree-card');
+    const step = currentSteps[currentStepIdx];
+    if (!step) return;
+
+    const requiredWidth = calculateSubtreeWidth(step.tree);
+    const availableWidth = treeCard.clientWidth - 40;
+
+    if (currentScale === 1 && requiredWidth > availableWidth) {
+        let autoScale = availableWidth / requiredWidth;
+        if (autoScale < 0.2) autoScale = 0.2;
+        currentScale = autoScale;
+    }
+
     currentScale += delta;
+
     if (currentScale < 0.2) currentScale = 0.2;
     if (currentScale > 2.5) currentScale = 2.5;
+
     updateTreeUI();
 }
 
@@ -460,15 +543,9 @@ function autoFitTree() {
     updateTreeUI();
 }
 
-async function resetSystem() {
-    if(!confirm("🔄 CẢNH BÁO: Reset toàn bộ dữ liệu hệ thống?")) return;
-    await fetch('/reset', { method: 'POST' });
-    location.reload();
-}
-
 window.onload = function() {
     fetchHeapData();
-    switchTab('tab-data');
+    switchTab('tab-tree');
 };
 
 window.onresize = function() {
