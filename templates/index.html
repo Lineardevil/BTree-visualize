@@ -35,7 +35,7 @@
                     </h3>
                     <div class="input-form vertical-form">
                         <input type="text" id="inMssv" placeholder="MSSV (Tối đa 8 số)" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                        <input type="text" id="inName" placeholder="Họ và tên">
+                        <input type="text" id="inName" placeholder="Họ và tên" maxlength="50">
                         <select id="inGender"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
                         <input type="text" id="inMajor" placeholder="Chuyên ngành (Tùy chọn)">
                         <button id="btnInsert" onclick="insertStudent()" class="btn-primary">INSERT</button>
